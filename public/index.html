@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>رفع الصور المجاني</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        .logo {
+            font-size: 2.5em;
+            font-weight: bold;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px 20px;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            background: #f8f9fa;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        .btn:hover {
+            background: #5a6fd8;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+        .link-box {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">📁 ImageHost</div>
+        <p>رفع الصور مجاناً ومستقل 100%</p>
+        
+        <div class="upload-area" id="uploadArea">
+            <div style="font-size: 3em;">📸</div>
+            <div>اسحب الصورة هنا أو انقر للاختيار</div>
+        </div>
+        
+        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        <button class="btn" onclick="uploadImage()">رفع الصورة</button>
+        
+        <div class="result" id="result">
+            <h3>✅ تم الرفع بنجاح!</h3>
+            <img id="preview" style="max-width: 100%; max-height: 200px; border-radius: 10px; margin: 10px 0;">
+            <div class="link-box" id="linkBox"></div>
+            <button class="btn" onclick="copyLink()">نسخ الرابط</button>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+        const resultDiv = document.getElementById('result');
+        const linkBox = document.getElementById('linkBox');
+        const previewImg = document.getElementById('preview');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', function(e) {
+            if (this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                };
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+
+        async function uploadImage() {
+            if (!fileInput.files[0]) {
+                alert('الرجاء اختيار صورة أولاً');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', fileInput.files[0]);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    linkBox.innerHTML = `<a href="${data.url}" target="_blank">${data.url}</a>`;
+                    previewImg.src = data.url;
+                    resultDiv.style.display = 'block';
+                } else {
+                    alert('فشل في الرفع: ' + data.error);
+                }
+            } catch (error) {
+                alert('خطأ في الاتصال: ' + error.message);
+            }
+        }
+
+        function copyLink() {
+            const link = linkBox.querySelector('a').href;
+            navigator.clipboard.writeText(link).then(() => {
+                alert('تم نسخ الرابط!');
+            });
+        }
+    </script>
+</body>
+</html>
