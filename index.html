@@ -362,7 +362,7 @@
             reader.readAsDataURL(file);
         }
 
-        // إنشاء الرابط الحقيقي مع السيرفر
+        // إنشاء الرابط الحقيقي مع السيرفر - الكود المحسن
         generateLinkBtn.addEventListener('click', async () => {
             if (!selectedFile) {
                 alert('⚠️ يرجى اختيار صورة أولاً');
@@ -378,12 +378,22 @@
                 const formData = new FormData();
                 formData.append('image', selectedFile);
 
+                console.log('🔄 بدء رفع الصورة...', selectedFile.name);
+
                 const response = await fetch('/upload', {
                     method: 'POST',
                     body: formData
                 });
                 
+                console.log('📨 استجابة السيرفر:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`خطأ في السيرفر: ${response.status} - ${errorText}`);
+                }
+                
                 const data = await response.json();
+                console.log('📊 بيانات الاستجابة:', data);
                 
                 if (data.success) {
                     currentImageUrl = data.url;
@@ -404,8 +414,13 @@
                 }
                 
             } catch (error) {
-                console.error('Error uploading image:', error);
+                console.error('❌ Error uploading image:', error);
                 alert('❌ حدث خطأ في رفع الصورة: ' + error.message);
+                
+                // فتح console للمستخدم لرؤية التفاصيل
+                if (confirm('هل تريد فتح نافذة المطورين لرؤية التفاصيل؟')) {
+                    console.error('تفاصيل الخطأ:', error);
+                }
             } finally {
                 generateLinkBtn.disabled = false;
                 generateText.classList.remove('hidden');
@@ -474,6 +489,10 @@
                 imageViewer.classList.add('hidden');
             }
         });
+
+        // فتح console للمساعدة في debugging
+        console.log('🔧 VNDXS Image Host - جاهز للاستخدام');
+        console.log('📝 لتصحيح الأخطاء، افتح نافذة المطورين (F12)');
     </script>
 </body>
-                      </html>
+</html>
