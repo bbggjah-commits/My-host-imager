@@ -3,129 +3,381 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>رفع الصور المجاني</title>
+    <title>VNDXS Image Host - تحويل الصور إلى روابط قصيرة</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;600;700&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        .font-arabic { font-family: 'IBM Plex Sans Arabic', sans-serif; }
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+        
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .container {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-            max-width: 500px;
-            width: 100%;
-            text-align: center;
+        .animate-fade-in-up { animation: fade-in-up 0.6s ease-out forwards; }
+        
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
         }
-        .logo {
-            font-size: 2.5em;
-            font-weight: bold;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0a0a0a;
         }
-        .upload-area {
-            border: 3px dashed #667eea;
-            border-radius: 15px;
-            padding: 40px 20px;
-            margin: 20px 0;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .upload-area:hover {
-            background: #f8f9fa;
-        }
-        .btn {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 16px;
-            margin: 10px;
-        }
-        .btn:hover {
-            background: #5a6fd8;
-        }
-        .result {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            display: none;
-        }
-        .link-box {
-            background: white;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            word-break: break-all;
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="logo">📁 ImageHost</div>
-        <p>رفع الصور مجاناً ومستقل 100%</p>
-        
-        <div class="upload-area" id="uploadArea">
-            <div style="font-size: 3em;">📸</div>
-            <div>اسحب الصورة هنا أو انقر للاختيار</div>
+<body class="bg-black text-white font-arabic min-h-screen dir-rtl">
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-black">
+        <div class="text-center">
+            <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p class="text-gray-400">جاري التحميل...</p>
         </div>
-        
-        <input type="file" id="fileInput" accept="image/*" style="display: none;">
-        <button class="btn" onclick="uploadImage()">رفع الصورة</button>
-        
-        <div class="result" id="result">
-            <h3>✅ تم الرفع بنجاح!</h3>
-            <img id="preview" style="max-width: 100%; max-height: 200px; border-radius: 10px; margin: 10px 0;">
-            <div class="link-box" id="linkBox"></div>
-            <button class="btn" onclick="copyLink()">نسخ الرابط</button>
+    </div>
+
+    <!-- Main Content -->
+    <div id="mainContent" class="hidden">
+        <!-- الخلفية المتحركة -->
+        <div class="fixed top-0 left-0 w-full h-full pointer-events-none z-0">
+            <div class="absolute top-[-10%] left-[20%] w-[500px] h-[500px] bg-[#0a1128] rounded-full blur-[120px] opacity-40 animate-pulse"></div>
+            <div class="absolute bottom-[-10%] right-[10%] w-[400px] h-[400px] bg-[#1e40af] rounded-full blur-[100px] opacity-20"></div>
+        </div>
+
+        <!-- المحتوى الرئيسي -->
+        <div class="relative z-10 container mx-auto px-6 py-12">
+            <!-- الهيدر -->
+            <header class="flex flex-col items-center mb-16 text-center">
+                <div class="relative group mb-8">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+                    <div class="relative w-32 h-32 md:w-40 md:h-40 rounded-full border-2 border-white/10 shadow-2xl bg-gradient-to-br from-gray-900 to-black flex items-center justify-center transform transition duration-500 hover:scale-105">
+                        <i data-lucide="image" class="w-16 h-16 text-blue-400"></i>
+                    </div>
+                    <div class="absolute inset-0 rounded-full ring-2 ring-blue-500/20 animate-pulse"></div>
+                </div>
+
+                <h1 class="text-5xl md:text-7xl font-bold font-orbitron tracking-wider mb-4 bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-200 to-gray-500">
+                    VNDXS IMAGE
+                </h1>
+                
+                <p class="text-xl md:text-2xl text-gray-400 font-light tracking-wide">
+                    تحويل الصور إلى روابط مباشرة
+                </p>
+            </header>
+
+            <!-- منطقة رفع الصور -->
+            <div class="glass-effect rounded-2xl p-8 mb-12 transition-all duration-500 max-w-2xl mx-auto">
+                <div class="text-center mb-8">
+                    <div class="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center">
+                        <i data-lucide="upload" class="w-10 h-10 text-white"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold mb-2">رفع صورتك</h2>
+                    <p class="text-gray-400">اسحب وأفلت أو انقر لاختيار الصورة</p>
+                </div>
+
+                <!-- منطقة السحب والإفلات -->
+                <div id="dropZone" class="border-2 border-dashed border-gray-600 rounded-2xl p-8 text-center transition-all duration-300 hover:border-blue-500 hover:bg-white/5 cursor-pointer mb-6">
+                    <input type="file" id="fileInput" accept="image/*" class="hidden">
+                    <div class="space-y-4">
+                        <i data-lucide="cloud-upload" class="w-16 h-16 text-gray-400 mx-auto"></i>
+                        <div>
+                            <p class="text-lg font-medium">اسحب وأفلت الصورة هنا</p>
+                            <p class="text-gray-400 text-sm mt-1">أو انقر لاختيار الملف</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- معاينة الصورة -->
+                <div id="imagePreview" class="hidden mb-6">
+                    <div class="bg-gray-900 rounded-2xl p-6">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i data-lucide="eye" class="w-5 h-5 text-blue-400"></i>
+                            معاينة الصورة
+                        </h3>
+                        <div class="flex flex-col md:flex-row gap-6 items-center">
+                            <div class="w-48 h-48 bg-gray-800 rounded-xl border-2 border-gray-700 flex items-center justify-center overflow-hidden">
+                                <img id="previewImage" class="w-full h-full object-cover hidden">
+                                <i data-lucide="image" class="w-16 h-16 text-gray-400" id="previewIcon"></i>
+                            </div>
+                            <div class="flex-1 space-y-3">
+                                <div class="flex justify-between items-center p-3 bg-gray-800 rounded-lg">
+                                    <span class="text-gray-400">الحجم:</span>
+                                    <span id="fileSize" class="font-medium"></span>
+                                </div>
+                                <div class="flex justify-between items-center p-3 bg-gray-800 rounded-lg">
+                                    <span class="text-gray-400">النوع:</span>
+                                    <span id="fileType" class="font-medium"></span>
+                                </div>
+                                <div class="flex justify-between items-center p-3 bg-gray-800 rounded-lg">
+                                    <span class="text-gray-400">الأبعاد:</span>
+                                    <span id="fileDimensions" class="font-medium"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- زر إنشاء الرابط -->
+                <button id="generateLinkBtn" class="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span id="generateText">🚀 إنشاء الرابط المباشر</span>
+                    <div id="generateSpinner" class="hidden animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto"></div>
+                </button>
+            </div>
+
+            <!-- نتائج الرابط -->
+            <div id="linkResult" class="hidden glass-effect rounded-2xl p-6 mb-8 max-w-2xl mx-auto animate-fade-in-up">
+                <h3 class="text-xl font-bold mb-4 text-green-400 flex items-center gap-2">
+                    <i data-lucide="check-circle" class="w-6 h-6"></i>
+                    تم إنشاء الرابط بنجاح!
+                </h3>
+                <div class="space-y-4">
+                    <div class="flex flex-col md:flex-row gap-4 items-center">
+                        <div class="w-32 h-32 bg-gray-800 rounded-lg border-2 border-green-500/30 flex items-center justify-center overflow-hidden">
+                            <img id="resultImage" class="w-full h-full object-cover hidden">
+                            <i data-lucide="image" class="w-12 h-12 text-green-400" id="resultIcon"></i>
+                        </div>
+                        <div class="flex-1 space-y-3">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-gray-400">الرابط المباشر:</span>
+                                <button id="copyLinkBtn" class="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1 bg-blue-500/20 px-3 py-1 rounded-lg border border-blue-500/30">
+                                    <i data-lucide="copy" class="w-4 h-4"></i>
+                                    نسخ الرابط
+                                </button>
+                            </div>
+                            <div class="bg-gray-900 rounded-lg p-3 border border-gray-700">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="link" class="w-4 h-4 text-blue-400"></i>
+                                    <input id="imageLink" type="text" readonly class="w-full bg-transparent text-sm text-gray-300 select-all font-mono" value="جاري إنشاء الرابط...">
+                                </div>
+                            </div>
+                            <div class="text-xs text-gray-500 flex items-center gap-1">
+                                <i data-lucide="info" class="w-3 h-3"></i>
+                                انسخ الرابط وأرسله لأي شخص يفتح هذه الصفحة
+                            </div>
+                            <div class="flex gap-2">
+                                <button id="testLinkBtn" class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-sm">
+                                    <i data-lucide="external-link" class="w-4 h-4 inline ml-1"></i>
+                                    فتح الصورة
+                                </button>
+                                <button id="downloadBtn" class="flex-1 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors text-sm">
+                                    <i data-lucide="download" class="w-4 h-4 inline ml-1"></i>
+                                    تحميل الصورة
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- الميزات -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 max-w-4xl mx-auto">
+                <div class="group relative glass-effect rounded-2xl p-6 hover:bg-white/10 transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(30,64,175,0.3)] flex flex-col items-center text-center">
+                    <div class="mb-4 p-3 rounded-lg bg-black/40 border border-white/5 group-hover:border-blue-500/30 transition-colors">
+                        <i data-lucide="zap" class="w-8 h-8 text-blue-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-gray-100 group-hover:text-white">سريع وسهل</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">رفع فوري وتحويل مباشر للروابط</p>
+                </div>
+
+                <div class="group relative glass-effect rounded-2xl p-6 hover:bg-white/10 transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(30,64,175,0.3)] flex flex-col items-center text-center">
+                    <div class="mb-4 p-3 rounded-lg bg-black/40 border border-white/5 group-hover:border-green-500/30 transition-colors">
+                        <i data-lucide="shield" class="w-8 h-8 text-green-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-gray-100 group-hover:text-white">مستقل 100%</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">لا يعتمد على أي خدمات خارجية</p>
+                </div>
+
+                <div class="group relative glass-effect rounded-2xl p-6 hover:bg-white/10 transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(30,64,175,0.3)] flex flex-col items-center text-center">
+                    <div class="mb-4 p-3 rounded-lg bg-black/40 border border-white/5 group-hover:border-purple-500/30 transition-colors">
+                        <i data-lucide="image" class="w-8 h-8 text-purple-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-gray-100 group-hover:text-white">عرض فوري</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">معاينة مباشرة للصورة قبل الإنشاء</p>
+                </div>
+            </div>
+
+            <!-- الفوتر -->
+            <footer class="w-full text-center border-t border-white/5 pt-8 pb-4 max-w-2xl mx-auto">
+                <p class="text-gray-500 text-sm font-arabic">
+                    جميع الحقوق محفوظة © 2025 VNDXS Group
+                </p>
+            </footer>
+        </div>
+    </div>
+
+    <!-- نافذة عرض الصورة -->
+    <div id="imageViewer" class="fixed inset-0 z-50 bg-black/90 hidden items-center justify-center p-4">
+        <div class="relative max-w-4xl max-h-full">
+            <button id="closeViewer" class="absolute -top-12 left-0 text-white hover:text-gray-300 transition-colors bg-black/50 rounded-full p-2">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <img id="viewerImage" class="max-w-full max-h-screen object-contain rounded-lg">
         </div>
     </div>
 
     <script>
+        // تهيئة الأيقونات
+        lucide.createIcons();
+
+        // إظهار المحتوى الرئيسي بعد التحميل
+        setTimeout(() => {
+            document.getElementById('loadingScreen').style.display = 'none';
+            document.getElementById('mainContent').classList.remove('hidden');
+        }, 1000);
+
+        // عناصر DOM
+        const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
-        const uploadArea = document.getElementById('uploadArea');
-        const resultDiv = document.getElementById('result');
-        const linkBox = document.getElementById('linkBox');
-        const previewImg = document.getElementById('preview');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImage = document.getElementById('previewImage');
+        const previewIcon = document.getElementById('previewIcon');
+        const fileSize = document.getElementById('fileSize');
+        const fileType = document.getElementById('fileType');
+        const fileDimensions = document.getElementById('fileDimensions');
+        const generateLinkBtn = document.getElementById('generateLinkBtn');
+        const generateText = document.getElementById('generateText');
+        const generateSpinner = document.getElementById('generateSpinner');
+        const linkResult = document.getElementById('linkResult');
+        const resultImage = document.getElementById('resultImage');
+        const resultIcon = document.getElementById('resultIcon');
+        const imageLink = document.getElementById('imageLink');
+        const copyLinkBtn = document.getElementById('copyLinkBtn');
+        const testLinkBtn = document.getElementById('testLinkBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const imageViewer = document.getElementById('imageViewer');
+        const viewerImage = document.getElementById('viewerImage');
+        const closeViewer = document.getElementById('closeViewer');
 
-        uploadArea.addEventListener('click', () => fileInput.click());
+        let selectedFile = null;
+        let currentImageUrl = '';
 
-        fileInput.addEventListener('change', function(e) {
-            if (this.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewImg.src = e.target.result;
-                };
-                reader.readAsDataURL(this.files[0]);
+        // إصلاح مشكلة النسخ - دالة محسنة
+        async function copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch (err) {
+                // الطريقة البديلة إذا فشلت الطريقة الحديثة
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    return true;
+                } catch (err) {
+                    document.body.removeChild(textArea);
+                    return false;
+                }
             }
+        }
+
+        // أحداث السحب والإفلات
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
         });
 
-        async function uploadImage() {
-            if (!fileInput.files[0]) {
-                alert('الرجاء اختيار صورة أولاً');
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.add('border-blue-500', 'bg-blue-500/10');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.remove('border-blue-500', 'bg-blue-500/10');
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', handleDrop, false);
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            handleFiles(files);
+        }
+
+        function handleFiles(files) {
+            if (files.length > 0) {
+                selectedFile = files[0];
+                if (selectedFile.type.startsWith('image/')) {
+                    displayImagePreview(selectedFile);
+                } else {
+                    alert('⚠️ يرجى اختيار ملف صورة فقط');
+                }
+            }
+        }
+
+        function displayImagePreview(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // عرض الصورة مباشرة في المربع
+                previewImage.src = e.target.result;
+                previewImage.classList.remove('hidden');
+                previewIcon.classList.add('hidden');
+                
+                resultImage.src = e.target.result;
+                viewerImage.src = e.target.result;
+                
+                // معلومات الملف
+                fileSize.textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+                fileType.textContent = file.type.split('/')[1].toUpperCase();
+                
+                // الحصول على الأبعاد
+                const img = new Image();
+                img.onload = function() {
+                    fileDimensions.textContent = `${this.width} × ${this.height}`;
+                };
+                img.src = e.target.result;
+                
+                imagePreview.classList.remove('hidden');
+                generateLinkBtn.disabled = false;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // إنشاء الرابط الحقيقي مع السيرفر
+        generateLinkBtn.addEventListener('click', async () => {
+            if (!selectedFile) {
+                alert('⚠️ يرجى اختيار صورة أولاً');
                 return;
             }
 
-            const formData = new FormData();
-            formData.append('image', fileInput.files[0]);
+            generateLinkBtn.disabled = true;
+            generateText.classList.add('hidden');
+            generateSpinner.classList.remove('hidden');
+            imageLink.value = '⏳ جاري رفع الصورة...';
 
             try {
+                const formData = new FormData();
+                formData.append('image', selectedFile);
+
                 const response = await fetch('/upload', {
                     method: 'POST',
                     body: formData
@@ -134,23 +386,94 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    linkBox.innerHTML = `<a href="${data.url}" target="_blank">${data.url}</a>`;
-                    previewImg.src = data.url;
-                    resultDiv.style.display = 'block';
+                    currentImageUrl = data.url;
+                    imageLink.value = currentImageUrl;
+                    linkResult.classList.remove('hidden');
+                    
+                    // إظهار الصورة في النتيجة
+                    resultImage.src = currentImageUrl;
+                    resultImage.classList.remove('hidden');
+                    resultIcon.classList.add('hidden');
+                    
+                    // التمرين إلى النتيجة
+                    linkResult.scrollIntoView({ behavior: 'smooth' });
+                    
+                    alert('✅ تم إنشاء الرابط بنجاح! انسخ الرابط وأرسله لأي شخص.');
                 } else {
-                    alert('فشل في الرفع: ' + data.error);
+                    throw new Error(data.error || 'فشل في رفع الصورة');
                 }
+                
             } catch (error) {
-                alert('خطأ في الاتصال: ' + error.message);
+                console.error('Error uploading image:', error);
+                alert('❌ حدث خطأ في رفع الصورة: ' + error.message);
+            } finally {
+                generateLinkBtn.disabled = false;
+                generateText.classList.remove('hidden');
+                generateSpinner.classList.add('hidden');
             }
-        }
+        });
 
-        function copyLink() {
-            const link = linkBox.querySelector('a').href;
-            navigator.clipboard.writeText(link).then(() => {
-                alert('تم نسخ الرابط!');
-            });
-        }
+        // نسخ الرابط
+        copyLinkBtn.addEventListener('click', async () => {
+            const linkText = imageLink.value;
+            
+            const success = await copyToClipboard(linkText);
+            
+            if (success) {
+                // تأثير النسخ الناجح
+                const originalText = copyLinkBtn.innerHTML;
+                copyLinkBtn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> تم النسخ!';
+                copyLinkBtn.classList.remove('text-blue-400', 'bg-blue-500/20');
+                copyLinkBtn.classList.add('text-green-400', 'bg-green-500/20', 'border-green-500/30');
+                
+                setTimeout(() => {
+                    copyLinkBtn.innerHTML = originalText;
+                    copyLinkBtn.classList.remove('text-green-400', 'bg-green-500/20', 'border-green-500/30');
+                    copyLinkBtn.classList.add('text-blue-400', 'bg-blue-500/20', 'border-blue-500/30');
+                    lucide.createIcons();
+                }, 2000);
+            } else {
+                alert('❌ تعذر نسخ الرابط. يرجى المحاولة يدوياً.');
+            }
+        });
+
+        // فتح الصورة في نافذة كبيرة
+        testLinkBtn.addEventListener('click', () => {
+            if (currentImageUrl) {
+                viewerImage.src = currentImageUrl;
+                imageViewer.classList.remove('hidden');
+            }
+        });
+
+        // إغلاق نافذة العرض
+        closeViewer.addEventListener('click', () => {
+            imageViewer.classList.add('hidden');
+        });
+
+        // تحميل الصورة
+        downloadBtn.addEventListener('click', () => {
+            if (currentImageUrl) {
+                const link = document.createElement('a');
+                link.href = currentImageUrl;
+                link.download = selectedFile.name || 'vndxs-image.png';
+                link.target = '_blank';
+                link.click();
+            }
+        });
+
+        // إغلاق نافذة العرض بالضغط على ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                imageViewer.classList.add('hidden');
+            }
+        });
+
+        // إغلاق نافذة العرض بالضغط على الخلفية
+        imageViewer.addEventListener('click', (e) => {
+            if (e.target === imageViewer) {
+                imageViewer.classList.add('hidden');
+            }
+        });
     </script>
 </body>
-</html>
+        </html>
