@@ -7,18 +7,20 @@ const crypto = require('crypto');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(express.static('.'));
+// Middleware - خدمة الملفات من المجلد الحالي
+app.use(express.static(__dirname));
 app.use(express.json());
 
 // إنشاء مجلد التحميلات
-if (!fs.existsSync('uploads')) {
-    fs.mkdirSync('uploads');
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+    console.log('✅ تم إنشاء مجلد uploads');
 }
 
 // إعداد multer
 const storage = multer.diskStorage({
-    destination: 'uploads/',
+    destination: uploadsDir,
     filename: (req, file, cb) => {
         const randomName = crypto.randomBytes(16).toString('hex');
         const ext = path.extname(file.originalname).toLowerCase();
@@ -76,7 +78,7 @@ app.post('/upload', upload.single('image'), (req, res) => {
 });
 
 // خدمة الملفات المرفوعة
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(uploadsDir));
 
 // معالجة الأخطاء
 app.use((error, req, res, next) => {
@@ -97,5 +99,6 @@ app.use((error, req, res, next) => {
 
 app.listen(PORT, () => {
     console.log(`🚀 VNDXS Image Host يعمل على: ${PORT}`);
-    console.log(`📁 مجلد التحميلات: ${path.join(__dirname, 'uploads')}`);
+    console.log(`📁 مجلد التحميلات: ${uploadsDir}`);
+    console.log(`📄 ملف الـ HTML: ${path.join(__dirname, 'index.html')}`);
 });
