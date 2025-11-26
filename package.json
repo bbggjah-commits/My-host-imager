@@ -1,7 +1,7 @@
 {
   "name": "vndxs-image-host",
   "version": "1.0.0",
-  "description": "خدمة رفع الصور VNDXS - تحويل الصور إلى روابط مباشرة",
+  "description": "خدمة رفع الصور VNDXS",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
