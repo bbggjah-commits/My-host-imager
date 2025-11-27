@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>اختبار الرفع</title>
+</head>
+<body>
+    <h1>اختبار رفع الصور</h1>
+    <input type="file" id="fileInput">
+    <button onclick="uploadTest()">رفع تجريبي</button>
+    
+    <script>
+        async function uploadTest() {
+            const fileInput = document.getElementById('fileInput');
+            if (!fileInput.files[0]) return alert('اختر صورة');
+            
+            const formData = new FormData();
+            formData.append('image', fileInput.files[0]);
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                alert(JSON.stringify(result, null, 2));
+            } catch (error) {
+                alert('خطأ: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
