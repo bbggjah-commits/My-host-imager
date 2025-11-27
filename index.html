@@ -160,7 +160,7 @@
                             </div>
                             <div class="text-xs text-gray-500 flex items-center gap-1">
                                 <i data-lucide="info" class="w-3 h-3"></i>
-                                انسخ الرابط وأرسله لأي شخص يفتح هذه الصفحة
+                                انسخ الرابط وأرسله لأي شخص
                             </div>
                             <div class="flex gap-2">
                                 <button id="testLinkBtn" class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-sm">
@@ -170,6 +170,10 @@
                                 <button id="downloadBtn" class="flex-1 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors text-sm">
                                     <i data-lucide="download" class="w-4 h-4 inline ml-1"></i>
                                     تحميل الصورة
+                                </button>
+                                <button id="newUploadBtn" class="flex-1 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors text-sm">
+                                    <i data-lucide="plus" class="w-4 h-4 inline ml-1"></i>
+                                    رفع جديد
                                 </button>
                             </div>
                         </div>
@@ -252,6 +256,7 @@
         const copyLinkBtn = document.getElementById('copyLinkBtn');
         const testLinkBtn = document.getElementById('testLinkBtn');
         const downloadBtn = document.getElementById('downloadBtn');
+        const newUploadBtn = document.getElementById('newUploadBtn');
         const imageViewer = document.getElementById('imageViewer');
         const viewerImage = document.getElementById('viewerImage');
         const closeViewer = document.getElementById('closeViewer');
@@ -259,13 +264,12 @@
         let selectedFile = null;
         let currentImageUrl = '';
 
-        // إصلاح مشكلة النسخ - دالة محسنة
+        // إصلاح مشكلة النسخ
         async function copyToClipboard(text) {
             try {
                 await navigator.clipboard.writeText(text);
                 return true;
             } catch (err) {
-                // الطريقة البديلة إذا فشلت الطريقة الحديثة
                 const textArea = document.createElement('textarea');
                 textArea.value = text;
                 textArea.style.position = 'fixed';
@@ -337,13 +341,9 @@
         function displayImagePreview(file) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                // عرض الصورة مباشرة في المربع
                 previewImage.src = e.target.result;
                 previewImage.classList.remove('hidden');
                 previewIcon.classList.add('hidden');
-                
-                resultImage.src = e.target.result;
-                viewerImage.src = e.target.result;
                 
                 // معلومات الملف
                 fileSize.textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
@@ -362,7 +362,7 @@
             reader.readAsDataURL(file);
         }
 
-        // إنشاء الرابط الحقيقي مع السيرفر - الكود المحسن
+        // إنشاء الرابط الحقيقي مع السيرفر
         generateLinkBtn.addEventListener('click', async () => {
             if (!selectedFile) {
                 alert('⚠️ يرجى اختيار صورة أولاً');
@@ -378,34 +378,27 @@
                 const formData = new FormData();
                 formData.append('image', selectedFile);
 
-                console.log('🔄 بدء رفع الصورة...', selectedFile.name);
-
                 const response = await fetch('/upload', {
                     method: 'POST',
                     body: formData
                 });
                 
-                console.log('📨 استجابة السيرفر:', response.status);
-                
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`خطأ في السيرفر: ${response.status} - ${errorText}`);
+                    throw new Error(`خطأ في السيرفر: ${response.status}`);
                 }
                 
                 const data = await response.json();
-                console.log('📊 بيانات الاستجابة:', data);
                 
                 if (data.success) {
                     currentImageUrl = data.url;
                     imageLink.value = currentImageUrl;
-                    linkResult.classList.remove('hidden');
                     
-                    // إظهار الصورة في النتيجة
+                    // ✅ استخدام الرابط الكامل مباشرة من السيرفر
                     resultImage.src = currentImageUrl;
                     resultImage.classList.remove('hidden');
                     resultIcon.classList.add('hidden');
                     
-                    // التمرين إلى النتيجة
+                    linkResult.classList.remove('hidden');
                     linkResult.scrollIntoView({ behavior: 'smooth' });
                     
                     alert('✅ تم إنشاء الرابط بنجاح! انسخ الرابط وأرسله لأي شخص.');
@@ -416,11 +409,6 @@
             } catch (error) {
                 console.error('❌ Error uploading image:', error);
                 alert('❌ حدث خطأ في رفع الصورة: ' + error.message);
-                
-                // فتح console للمستخدم لرؤية التفاصيل
-                if (confirm('هل تريد فتح نافذة المطورين لرؤية التفاصيل؟')) {
-                    console.error('تفاصيل الخطأ:', error);
-                }
             } finally {
                 generateLinkBtn.disabled = false;
                 generateText.classList.remove('hidden');
@@ -435,7 +423,6 @@
             const success = await copyToClipboard(linkText);
             
             if (success) {
-                // تأثير النسخ الناجح
                 const originalText = copyLinkBtn.innerHTML;
                 copyLinkBtn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> تم النسخ!';
                 copyLinkBtn.classList.remove('text-blue-400', 'bg-blue-500/20');
@@ -460,11 +447,6 @@
             }
         });
 
-        // إغلاق نافذة العرض
-        closeViewer.addEventListener('click', () => {
-            imageViewer.classList.add('hidden');
-        });
-
         // تحميل الصورة
         downloadBtn.addEventListener('click', () => {
             if (currentImageUrl) {
@@ -474,6 +456,28 @@
                 link.target = '_blank';
                 link.click();
             }
+        });
+
+        // رفع جديد
+        newUploadBtn.addEventListener('click', () => {
+            // إعادة تعيين كل شيء
+            fileInput.value = '';
+            selectedFile = null;
+            currentImageUrl = '';
+            imagePreview.classList.add('hidden');
+            linkResult.classList.add('hidden');
+            previewImage.classList.add('hidden');
+            previewIcon.classList.remove('hidden');
+            resultImage.classList.add('hidden');
+            resultIcon.classList.remove('hidden');
+            
+            // التمرين إلى الأعلى
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        // إغلاق نافذة العرض
+        closeViewer.addEventListener('click', () => {
+            imageViewer.classList.add('hidden');
         });
 
         // إغلاق نافذة العرض بالضغط على ESC
@@ -490,9 +494,7 @@
             }
         });
 
-        // فتح console للمساعدة في debugging
-        console.log('🔧 VNDXS Image Host - جاهز للاستخدام');
-        console.log('📝 لتصحيح الأخطاء، افتح نافذة المطورين (F12)');
+        console.log('🚀 VNDXS Image Host - جاهز للاستخدام');
     </script>
 </body>
 </html>
