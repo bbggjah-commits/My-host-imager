@@ -20,7 +20,7 @@ const ensureUploadsDir = () => {
     return uploadsPath;
 };
 
-// ✅ إعداد multer مبسط
+// ✅ إعداد multer
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const uploadsDir = ensureUploadsDir();
@@ -71,8 +71,9 @@ app.post('/upload', upload.single('image'), (req, res) => {
             mimetype: req.file.mimetype
         });
 
-        // ✅ استخدام الرابط المباشر
-        const imageUrl = `/uploads/${req.file.filename}`;
+        // ✅ إصلاح الرابط - استخدام الرابط المطلق الكامل
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const imageUrl = `${baseUrl}/uploads/${req.file.filename}`;
         
         console.log('✅ تم رفع الصورة بنجاح:', imageUrl);
         
@@ -118,7 +119,5 @@ app.use((error, req, res, next) => {
 app.listen(PORT, () => {
     console.log('🚀 VNDXS Image Host يعمل بنجاح!');
     console.log(`📍 البورت: ${PORT}`);
-    console.log(`📄 الصفحة الرئيسية: ${path.join(__dirname, 'index.html')}`);
-    console.log(`📁 مجلد التحميلات: ${path.join(__dirname, 'uploads')}`);
     console.log('✅ جاهز لاستقبال الصور...');
 });
